@@ -121,11 +121,22 @@ namespace KeyboardChatterBlocker
         public void LogKeyBlocked(KeyBlockedEventArgs e)
         {
             DateTime now = DateTime.Now;
+            int firstRowShown = ChatterLogGrid.FirstDisplayedScrollingRowIndex;
             bool wasScrolledToBottom = ChatterLogGrid.FirstDisplayedScrollingRowIndex + ChatterLogGrid.DisplayedRowCount(true) >= ChatterLogGrid.RowCount;
-            ChatterLogGrid.Rows.Add(now.ToString("MM/dd HH:mm:ss", CultureInfo.InvariantCulture), KeysHelper.Stringify(e.Key), e.Time, "[Edit]");
-            if (wasScrolledToBottom)
+            object[] values = new object[] { now.ToString("MM/dd HH:mm:ss", CultureInfo.InvariantCulture), KeysHelper.Stringify(e.Key), e.Time, "[Edit]" };
+            int rowIndex = ChatterLogInsertIndex(values);
+            ChatterLogGrid.Rows.Insert(rowIndex, values);
+            if (firstRowShown == 0 && rowIndex == 0)
+            {
+                ChatterLogGrid.FirstDisplayedScrollingRowIndex = 0; // Inserted at the top while viewing the top = show it
+            }
+            else if (wasScrolledToBottom)
             {
                 ChatterLogGrid.FirstDisplayedScrollingRowIndex = ChatterLogGrid.RowCount - 1;
+            }
+            else if (rowIndex <= firstRowShown)
+            {
+                ChatterLogGrid.FirstDisplayedScrollingRowIndex = firstRowShown + 1; // Inserted above the view = keep the same rows in view
             }
             if (Program.Blocker.SaveChatterLog)
             {
@@ -133,6 +144,38 @@ namespace KeyboardChatterBlocker
                 keyText = keyText.Contains(",") ? $"\"{keyText}\"" : keyText;
                 PendingChatterLogLines.Add($"{now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)},{keyText},{e.Time}");
             }
+        }
+
+        /// <summary>
+        /// Finds where a new row belongs in the chatter log, so it lands in order when the log has been sorted by clicking a column header.
+        /// Among rows that sort the same, it goes last in an ascending sort and first in a descending one, so a sort by time keeps the newest row at the top or bottom.
+        /// </summary>
+        /// <param name="values">The new row's cell values.</param>
+        /// <returns>The row index to insert at, which is the end if the log isn't sorted.</returns>
+        public int ChatterLogInsertIndex(object[] values)
+        {
+            DataGridViewColumn sortedColumn = ChatterLogGrid.SortedColumn;
+            if (sortedColumn == null)
+            {
+                return ChatterLogGrid.RowCount;
+            }
+            bool descending = ChatterLogGrid.SortOrder == SortOrder.Descending;
+            object newValue = values[sortedColumn.Index];
+            int low = 0, high = ChatterLogGrid.RowCount;
+            while (low < high) // Binary search, comparing the same way as the grid's own sort
+            {
+                int middle = (low + high) / 2;
+                int comparison = System.Collections.Comparer.Default.Compare(ChatterLogGrid[sortedColumn.Index, middle].Value, newValue);
+                if (descending ? comparison <= 0 : comparison > 0)
+                {
+                    high = middle;
+                }
+                else
+                {
+                    low = middle + 1;
+                }
+            }
+            return low;
         }
 
         /// <summary>
