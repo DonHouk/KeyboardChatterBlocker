@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.IO;
 
 namespace KeyboardChatterBlocker
@@ -22,13 +22,6 @@ namespace KeyboardChatterBlocker
         /// Location of the config file.
         /// </summary>
         public static readonly string CONFIG_FILE = $"{ConfigFolder}/config.txt";
-
-        /// <summary>
-        /// External Windows API call. Gets the current tick count as a 64-bit (ulong) value.
-        /// Similar to <see cref="Environment.TickCount"/> but less broken.
-        /// </summary>
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern ulong GetTickCount64();
 
         /// <summary>
         /// The relevant <see cref="KeyboardInterceptor"/> instance.
@@ -337,14 +330,14 @@ namespace KeyboardChatterBlocker
         public List<string> AutoDisablePrograms = new List<string>();
 
         /// <summary>
-        /// A mapping of keys to the last press time.
+        /// A mapping of keys to the last press time, as a <see cref="Stopwatch"/> timestamp.
         /// </summary>
-        public AcceleratedKeyMap<ulong> KeysToLastPressTime = new AcceleratedKeyMap<ulong>();
+        public AcceleratedKeyMap<long> KeysToLastPressTime = new AcceleratedKeyMap<long>();
 
         /// <summary>
-        /// A mapping of keys to the last release time.
+        /// A mapping of keys to the last release time, as a <see cref="Stopwatch"/> timestamp.
         /// </summary>
-        public AcceleratedKeyMap<ulong> KeysToLastReleaseTime = new AcceleratedKeyMap<ulong>();
+        public AcceleratedKeyMap<long> KeysToLastReleaseTime = new AcceleratedKeyMap<long>();
 
         /// <summary>
         /// The global chatter time limit, in milliseconds.
@@ -527,8 +520,8 @@ namespace KeyboardChatterBlocker
             {
                 StatsKeyCount[key]++;
             }
-            ulong timeNow = GetTickCount64();
-            ulong timeLast = MeasureMode == MeasureFrom.Release ? KeysToLastReleaseTime[key] : KeysToLastPressTime[key];
+            long timeNow = Stopwatch.GetTimestamp(); // Not GetTickCount64, which only moves in ~15.6ms steps, too coarse to tell chatter from fast typing
+            long timeLast = MeasureMode == MeasureFrom.Release ? KeysToLastReleaseTime[key] : KeysToLastPressTime[key];
             if (ShouldBlockAll)
             {
                 return false;
@@ -549,7 +542,7 @@ namespace KeyboardChatterBlocker
                 return true;
             }
             uint maxTime = chatterTimeLimit ?? (defaultZero ? 0 : GlobalChatterTimeLimit);
-            ulong timePassed = unchecked(timeNow - timeLast); // unchecked means if time runs backwards it will wrap to super large and be ignored
+            double timePassed = (timeNow - timeLast) * 1000.0 / Stopwatch.Frequency; // Stopwatch ticks to milliseconds
             if (timePassed >= maxTime // Time past the chatter limit = enough delay passed, allow it.
                 || timePassed < MinimumChatterTime) // Or too fast (below user configured minimum) = possible bug or similar oddity, allow it.
             {
@@ -571,7 +564,7 @@ namespace KeyboardChatterBlocker
         /// <returns>True to allow the key-up, false to deny it.</returns>
         public bool AllowKeyUp(Keys key)
         {
-            ulong timeNow = GetTickCount64();
+            long timeNow = Stopwatch.GetTimestamp();
             if (!IsEnabled || IsAutoDisabled || TempDisable) // Not enabled = allow everything through.
             {
                 KeysToLastReleaseTime[key] = timeNow;
