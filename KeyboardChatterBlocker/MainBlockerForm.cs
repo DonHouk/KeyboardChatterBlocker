@@ -505,6 +505,7 @@ namespace KeyboardChatterBlocker
                 if (Program.Blocker.SaveStatsTicker > 60 * 30)
                 {
                     Program.Blocker.SaveStatsToFile(false);
+                    Program.Blocker.SaveStatsTicker = 0;
                 }
             }
             if (ChatterLogSaveCountdown > 0)
