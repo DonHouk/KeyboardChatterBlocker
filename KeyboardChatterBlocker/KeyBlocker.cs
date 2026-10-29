@@ -446,7 +446,9 @@ namespace KeyboardChatterBlocker
             foreach (KeyValuePair<Keys, int> keyData in StatsKeyCount.MainDictionary)
             {
                 int chatterTotal = StatsKeyChatter[keyData.Key];
-                output.Append($"{keyData.Key.Stringify()},{keyData.Value},{chatterTotal},\n");
+                string keyText = keyData.Key.Stringify();
+                keyText = keyText.Contains(",") ? $"\"{keyText}\"" : keyText;
+                output.Append($"{keyText},{keyData.Value},{chatterTotal},\n");
             }
             try
             {
@@ -487,11 +489,12 @@ namespace KeyboardChatterBlocker
                 {
                     continue;
                 }
-                string[] parts = line.Split(',');
+                string[] parts = line.TrimEnd(',').Split(',');
                 if (parts.Length < 3
-                    || !Enum.TryParse(parts[0], out Keys key)
-                    || !int.TryParse(parts[1], out int keyCount)
-                    || !int.TryParse(parts[2], out int chatterTotal))
+                    || !KeysHelper.TryGetKey(string.Join(",", parts, 0, parts.Length - 2).Trim('"'), out Keys key)
+                    || (int)key < 0
+                    || !int.TryParse(parts[parts.Length - 2], out int keyCount)
+                    || !int.TryParse(parts[parts.Length - 1], out int chatterTotal))
                 {
                     continue;
                 }
