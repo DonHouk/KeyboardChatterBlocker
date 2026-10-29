@@ -123,7 +123,7 @@ namespace KeyboardChatterBlocker
             DateTime now = DateTime.Now;
             int firstRowShown = ChatterLogGrid.FirstDisplayedScrollingRowIndex;
             bool wasScrolledToBottom = ChatterLogGrid.FirstDisplayedScrollingRowIndex + ChatterLogGrid.DisplayedRowCount(true) >= ChatterLogGrid.RowCount;
-            object[] values = new object[] { now.ToString("MM/dd HH:mm:ss", CultureInfo.InvariantCulture), KeysHelper.Stringify(e.Key), e.Time, "[Edit]" };
+            object[] values = new object[] { now, KeysHelper.Stringify(e.Key), e.Time, "[Edit]" };
             int rowIndex = ChatterLogInsertIndex(values);
             ChatterLogGrid.Rows.Insert(rowIndex, values);
             if (firstRowShown == 0 && rowIndex == 0)
@@ -244,7 +244,7 @@ namespace KeyboardChatterBlocker
                 {
                     continue;
                 }
-                ChatterLogGrid.Rows.Add(time.ToString("MM/dd HH:mm:ss", CultureInfo.InvariantCulture), key.Stringify(), chatterTime, "[Edit]");
+                ChatterLogGrid.Rows.Add(time, key.Stringify(), chatterTime, "[Edit]");
             }
             if (ChatterLogGrid.RowCount > 0)
             {
