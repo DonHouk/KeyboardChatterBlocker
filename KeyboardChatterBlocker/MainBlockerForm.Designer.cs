@@ -318,10 +318,10 @@
             // 
             // StatsKeyColumn
             // 
+            this.StatsKeyColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.StatsKeyColumn.HeaderText = "Key";
             this.StatsKeyColumn.Name = "StatsKeyColumn";
             this.StatsKeyColumn.ReadOnly = true;
-            this.StatsKeyColumn.Width = 75;
             // 
             // StatsCountColumn
             // 
@@ -389,6 +389,7 @@
             // 
             // ConfigureKeyColumn
             // 
+            this.ConfigureKeyColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.ConfigureKeyColumn.HeaderText = "Key";
             this.ConfigureKeyColumn.Name = "ConfigureKeyColumn";
             this.ConfigureKeyColumn.ReadOnly = true;
